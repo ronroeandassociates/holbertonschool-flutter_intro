@@ -6,20 +6,15 @@ void main() {
 }
 
 class MyApp extends StatelessWidget {
-  // Constructor
   const MyApp({Key? key}) : super(key: key);
 
-  // Overriding default build
   @override
   Widget build(BuildContext context) {
-    // Styling using Material App
     return MaterialApp(
-      // Usually wrap text in Text widget? Might be updated syntax
-      title: 'Flutter Demo',
+      title: 'Breaking Bad',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      // Home page defined by HomeScreen widget
       home: const HomeScreen(),
     );
   }

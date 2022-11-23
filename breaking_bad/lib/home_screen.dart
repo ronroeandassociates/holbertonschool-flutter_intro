@@ -1,89 +1,113 @@
-import 'dart:convert';
-import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'models.dart';
-import 'character_tile.dart';
+// ignore: unused_import
 import 'quotes_screen.dart';
+import 'package:flutter/material.dart';
+import 'character_tile.dart';
+import 'models.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+// class HomeScreen - stateful widget
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
 
-  get itemHeight => null;
+  // HomeScreenState - state class
+  @override
+  State<HomeScreen> createState() => HomeScreenState();
+}
 
-  get itemWidth => null;
+class HomeScreenState extends State<HomeScreen> {
+  // _characters - list of characters
+  late Future<List<Character>> _characters;
 
-  Future<List<Character>> fetchBbCharacters() async {
-    try {
-      // Send get request to url (parse string as uri type)
-      // var response = await http
-          .get(Uri.parse('https://breakingbadapi.com/api/characters'));
-      // Decode response body to json
-      // var characters = json.decode(response.body);
-      List<Character> charList = [];
-      for (var char in characters) {
-        // Convert to string and add to list
-        charList.add(Character.fromJson(char));
-      }
-      return charList;
-    } catch (e) {
-      throw Exception(e);
-    }
+  @override
+  void initState() {
+    // init state
+    super.initState();
+    // set future to fetch characters
+    _characters = fetchBbCharacters();
   }
 
+  // fetch characters function
+  Future<List<Character>> fetchBbCharacters() async {
+    List<Character> characters = [];
+
+    try {
+      // fetch characters from api
+      final response = await http.get(
+        Uri.https('breakingbadapi.com', '/api/characters'),
+      );
+
+      // check response status
+      if (response.statusCode == 200) {
+        // parse json
+        final jsonCharacters = json.decode(response.body);
+        // iterate over json characters
+        for (var jsonCharacter in jsonCharacters) {
+          // add character to list
+          characters.add(Character.fromJson(jsonCharacter));
+        }
+      } else {
+        // throw error to catch
+        throw Exception('Failed to load characters');
+      }
+    } catch (e) {
+      // throw error
+      throw Exception('Failed to load characters');
+    }
+
+    // return characters
+    return characters;
+  }
+
+  // build method
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
-          title: const Text('Breaking Bad Quotes'),
-        ),
-        body: Card(
-            child: FutureBuilder(
-                // Fetch data from url
-                future: fetchBbCharacters(),
-                builder: (BuildContext context, AsyncSnapshot snapshot) {
-                  // If snapshot is loading, add loading widget
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(
-                      child: CircularProgressIndicator(),
-                    );
-                  }
-                  // If loaded but no data returned, add error notification
-                  if (snapshot.data == null) {
-                    return const Center(
-                      child: Text("Error"),
-                    );
-                  } else {
-                    // Create list of characters
-                    return GridView.builder(
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                          // Determine how many items to show in row
-                          crossAxisCount: 2,
-                          // Determine how wide each item is
-                          childAspectRatio: (3 / 2),
-                        ),
-                        // Must provide total number of items
-                        itemCount: snapshot.data.length,
-                        // Loop through each item in snapshot.data
-                        itemBuilder: (BuildContext context, int index) {
-                          return GestureDetector(
-                              // On tap, navigate to quotes screen, passing character name
-                              onTap: () {
-                                Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                        builder: (context) => QuotesScreen(
-                                            character:
-                                                snapshot.data[index].name)));
-                              },
-                              // Character tile widget wrapped in GestureDetector for click event
-                              // This is display, passing character index to character tile
-                              child: Card(
-                                child: CharacterTile(
-                                    character: snapshot.data[index]),
-                              ));
-                        });
-                  }
-                })));
+      appBar: AppBar(
+        title: const Text('Breaking Bad Quotes'),
+      ),
+      body: FutureBuilder<List<Character>>(
+        future: _characters,
+        builder: (BuildContext context, AsyncSnapshot snapshot) {
+          // if loading
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            // center widget with circular progress indicator
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
+            // if no data in snapshot
+          }
+          if (snapshot.data == null) {
+            // show error message
+            return const Center(
+              child: Text('Error'),
+            );
+            // if has data
+          } else {
+            return GridView.builder(
+              // setup gridview
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 25,
+                mainAxisSpacing: 25,
+              ),
+              // add characters to gridview
+              // null check for snapshot data to avoid error
+              itemCount: snapshot.data?.length ?? 0,
+              itemBuilder: (BuildContext contex, int index) {
+                // return CharacterTile widget
+                return CharacterTile(
+                  character: snapshot.data?[index],
+                );
+              },
+              // add padding to gridview
+              padding: const EdgeInsets.all(15),
+              // add shrink wrap to gridview
+              shrinkWrap: true,
+            );
+          }
+        },
+      ),
+    );
   }
 }
